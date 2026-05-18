@@ -3,8 +3,8 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
+  --primary: #003791;
+  --primary-dark: #002b73;
   --card-bg: #ffffff;
   --border: #e2e8f0;
   --text-muted: #64748b;
@@ -30,7 +30,7 @@ body {
 }
 
 .gradient-header {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  background: linear-gradient(135deg, #003791 0%, #0047b3 50%, #1a5cc8 100%);
 }
 
 .card-hover {
@@ -43,14 +43,14 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #003791 0%, #0047b3 100%);
   transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #002b73 0%, #003791 100%);
   transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgb(99 102 241 / 0.3);
+  box-shadow: 0 10px 15px -3px rgb(0 55 145 / 0.3);
 }
 
 .btn-secondary {
@@ -76,8 +76,8 @@ body {
 }
 
 .input-field:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
+  border-color: #003791;
+  box-shadow: 0 0 0 3px rgb(0 55 145 / 0.1);
 }
 
 .empty-state {
@@ -120,13 +120,13 @@ body {
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: rgb(99 102 241 / 0.1);
-  color: #6366f1;
+  background: rgb(0 55 145 / 0.1);
+  color: #003791;
 }
 
 .signup-badge.active {
-  background: rgb(99 102 241 / 0.2);
-  color: #4f46e5;
+  background: rgb(0 55 145 / 0.2);
+  color: #002b73;
 }
 
 .time-badge {
@@ -136,6 +136,6 @@ body {
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
-  background: linear-gradient(135deg, rgb(99 102 241 / 0.1) 0%, rgb(139 92 246 / 0.1) 100%);
-  color: #4f46e5;
+  background: linear-gradient(135deg, rgb(0 55 145 / 0.1) 0%, rgb(0 71 179 / 0.1) 100%);
+  color: #003791;
 }

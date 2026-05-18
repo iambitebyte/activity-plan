@@ -93,7 +93,7 @@ export default function LoginPage() {
             还没有账户？{" "}
             <button
               onClick={() => router.push("/register")}
-              className="text-indigo-600 hover:text-indigo-700 font-medium"
+              className="text-blue-600 hover:text-blue-700 font-medium"
             >
               注册
             </button>

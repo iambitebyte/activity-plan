@@ -101,7 +101,7 @@ export default function MySchedulePage() {
     return (
       <div className="app-container flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">加载中...</p>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function MySchedulePage() {
               className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 selectedDate === d.value
                   ? "btn-primary text-white shadow-md"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
               }`}
             >
               {d.label}
@@ -158,7 +158,7 @@ export default function MySchedulePage() {
             <p className="text-gray-400 text-lg mb-2">该日期暂无报名活动</p>
             <button
               onClick={() => router.push("/")}
-              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               去活动日程报名
             </button>
@@ -168,6 +168,7 @@ export default function MySchedulePage() {
             const slotSessions = mySessions.filter((s) => s.time === slot);
             return (
               <div key={slot} className="mb-8 animate-fade-in">
+                {timeSlots.indexOf(slot) > 0 && <hr className="border-gray-300 mb-6 mx-2" />}
                 <div className="flex items-center gap-3 mb-4">
                   <span className="time-badge">{slot}</span>
                 </div>
@@ -175,20 +176,20 @@ export default function MySchedulePage() {
                   {slotSessions.map((session) => (
                     <div
                       key={session.id}
-                      className="bg-white rounded-xl border-2 border-indigo-200 p-5"
+                      className="bg-white rounded-xl border-2 border-blue-200 p-5"
                     >
                       <div className="mb-3">
                         <h3 className="font-bold text-gray-900 text-base mb-1">{session.topic}</h3>
                         <p className="text-sm text-gray-500">{session.speaker}</p>
                       </div>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-indigo-100">
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-blue-100">
                         <span className="signup-badge active">
                           {session.signupCount} 人报名
                         </span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => router.push(`/session/${session.id}`)}
-                            className="px-3 py-1.5 rounded-lg text-sm text-indigo-600 hover:bg-indigo-50 transition-all"
+                            className="px-3 py-1.5 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition-all"
                           >
                             查看详情
                           </button>

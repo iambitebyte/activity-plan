@@ -166,7 +166,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
         <div className="flex-1 overflow-y-auto p-6 pt-4 space-y-5">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="w-6 h-6 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -189,7 +189,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                   disabled={signupLoading}
                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
                     isSignedUp
-                      ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                      ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
                       : "btn-primary text-white"
                   }`}
                 >
@@ -228,7 +228,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                     <p className="text-sm text-gray-500">
                       <button
                         onClick={() => { onClose(); router.push("/login"); }}
-                        className="text-indigo-600 hover:text-indigo-700 font-medium"
+                        className="text-blue-600 hover:text-blue-700 font-medium"
                       >
                         登录
                       </button>
@@ -246,7 +246,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                     {comments.map((comment) => (
                       <div key={comment.id} className="p-4 rounded-lg bg-gray-50">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+                          <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
                             {comment.display_name.charAt(0)}
                           </span>
                           <span className="text-sm font-medium text-gray-900">{comment.display_name}</span>

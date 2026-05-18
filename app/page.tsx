@@ -123,7 +123,7 @@ export default function SchedulePage() {
     return (
       <div className="app-container flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">加载中...</p>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function SchedulePage() {
               className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 selectedDate === d.value
                   ? "btn-primary text-white shadow-md"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
               }`}
             >
               {d.label}
@@ -157,6 +157,7 @@ export default function SchedulePage() {
           const slotSessions = filteredSessions.filter((s) => s.time === slot);
           return (
             <div key={slot} className="mb-8 animate-fade-in">
+              {timeSlots.indexOf(slot) > 0 && <hr className="border-gray-300 mb-6 mx-2" />}
               <div className="flex items-center gap-3 mb-4">
                 <span className="time-badge">{slot}</span>
                 <span className="text-xs text-gray-400">{slotSessions.length} 场活动</span>
@@ -197,7 +198,7 @@ export default function SchedulePage() {
                         disabled={signupLoading === session.id}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                           session.isSignedUp
-                            ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                            ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
                             : "btn-primary text-white"
                         } disabled:opacity-50`}
                       >
