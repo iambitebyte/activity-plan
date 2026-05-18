@@ -242,21 +242,40 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                     <p className="text-gray-400 text-sm">暂无感想，来做第一个留言的人吧</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="p-4 rounded-lg bg-gray-50">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
-                            {comment.display_name.charAt(0)}
-                          </span>
-                          <span className="text-sm font-medium text-gray-900">{comment.display_name}</span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(comment.created_at + "Z").toLocaleString("zh-CN")}
-                          </span>
+                  <div className="space-y-4">
+                    {(() => {
+                      const grouped: { userId: number; name: string; initial: string; items: typeof comments }[] = [];
+                      const order: number[] = [];
+                      for (const c of comments) {
+                        const g = grouped.find((g) => g.userId === c.user_id);
+                        if (g) {
+                          g.items.push(c);
+                        } else {
+                          grouped.push({ userId: c.user_id, name: c.display_name, initial: c.display_name.charAt(0), items: [c] });
+                          order.push(c.user_id);
+                        }
+                      }
+                      return grouped.map((g) => (
+                        <div key={g.userId} className="p-4 rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+                              {g.initial}
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">{g.name}</span>
+                          </div>
+                          <div className="space-y-2 pl-8">
+                            {g.items.map((c) => (
+                              <div key={c.id} className="border-l-2 border-blue-100 pl-3">
+                                <p className="text-xs text-gray-400 mb-1">
+                                  {new Date(c.created_at + "Z").toLocaleString("zh-CN")}
+                                </p>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap pl-8">{comment.content}</p>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
