@@ -15,16 +15,10 @@ const globalForDb = globalThis as unknown as {
   db: Database.Database | undefined;
 };
 
-export const db =
-  globalForDb.db ??
-  new Database(DB_PATH);
-
-if (!globalForDb.db) {
-  globalForDb.db = db;
-
-  db.pragma("journal_mode = WAL");
-
-  db.exec(`
+function initDb(): Database.Database {
+  const database = new Database(DB_PATH);
+  database.pragma("journal_mode = WAL");
+  database.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -57,7 +51,17 @@ if (!globalForDb.db) {
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+  return database;
 }
+
+export const db = new Proxy({} as Database.Database, {
+  get(_, prop) {
+    if (!globalForDb.db) {
+      globalForDb.db = initDb();
+    }
+    return Reflect.get(globalForDb.db, prop as string | symbol);
+  }
+});
 
 export interface User {
   id: number;
