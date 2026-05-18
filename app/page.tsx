@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
+import SessionModal from "@/components/SessionModal";
 
 interface SessionData {
   id: string;
@@ -30,6 +31,7 @@ export default function SchedulePage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [signupLoading, setSignupLoading] = useState<string | null>(null);
+  const [modalSessionId, setModalSessionId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,6 +98,24 @@ export default function SchedulePage() {
     setSessions((prev) => prev.map((s) => ({ ...s, isSignedUp: false })));
   };
 
+  const handleModalSignupChange = (sessionId: string, signedUp: boolean) => {
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id === sessionId) {
+          return {
+            ...s,
+            isSignedUp: signedUp,
+            signupCount: signedUp ? s.signupCount + 1 : s.signupCount - 1,
+            signups: signedUp
+              ? [...s.signups, { user_id: user!.id, display_name: user!.display_name }]
+              : s.signups.filter((su) => su.user_id !== user!.id),
+          };
+        }
+        return s;
+      })
+    );
+  };
+
   const filteredSessions = sessions.filter((s) => s.date === selectedDate);
   const timeSlots = [...new Set(filteredSessions.map((s) => s.time))].sort();
 
@@ -146,7 +166,7 @@ export default function SchedulePage() {
                   <div
                     key={session.id}
                     className="bg-white rounded-xl border border-gray-200 p-5 card-hover cursor-pointer"
-                    onClick={() => router.push(`/session/${session.id}`)}
+                    onClick={() => setModalSessionId(session.id)}
                   >
                     <div className="mb-3">
                       <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-2">
@@ -190,7 +210,7 @@ export default function SchedulePage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/session/${session.id}`);
+                          setModalSessionId(session.id);
                         }}
                         className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-all"
                       >
@@ -210,6 +230,15 @@ export default function SchedulePage() {
           </div>
         )}
       </main>
+
+      {modalSessionId && (
+        <SessionModal
+          sessionId={modalSessionId}
+          user={user}
+          onClose={() => setModalSessionId(null)}
+          onSignupChange={handleModalSignupChange}
+        />
+      )}
     </div>
   );
 }
