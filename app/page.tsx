@@ -182,7 +182,7 @@ export default function SchedulePage() {
                           {session.signupCount} 人报名
                         </span>
                         {session.signupCount > 0 && (
-                          <span className="text-xs text-gray-400 truncate max-w-[120px]">
+                          <span className="text-xs text-gray-900 font-bold truncate max-w-[120px]">
                             {session.signups.map((s) => s.display_name).join(", ")}
                           </span>
                         )}

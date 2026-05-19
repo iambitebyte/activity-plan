@@ -177,7 +177,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                   {signups.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {signups.map((s) => (
-                        <span key={s.user_id} className="signup-badge">
+                        <span key={s.user_id} className="signup-badge !text-gray-900 !font-bold">
                           {s.display_name}
                         </span>
                       ))}
