@@ -96,9 +96,16 @@ export default function MySchedulePage() {
 
   const [copied, setCopied] = useState(false);
 
-  const handleCopySchedule = async () => {
+  const handleCopySchedule = () => {
     const text = mySessions.map((s) => s.topic).join("\n");
-    await navigator.clipboard.writeText(text);
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
