@@ -94,6 +94,15 @@ export default function MySchedulePage() {
     router.push("/");
   };
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySchedule = async () => {
+    const text = mySessions.map((s) => s.topic).join("\n");
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const mySessions = sessions.filter((s) => s.isSignedUp && s.date === selectedDate);
   const timeSlots = [...new Set(mySessions.map((s) => s.time))].sort();
 
@@ -134,7 +143,17 @@ export default function MySchedulePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">我的日程</h2>
-          <span className="text-sm text-gray-500">共报名 {sessions.filter((s) => s.isSignedUp).length} 场活动</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-500">共报名 {sessions.filter((s) => s.isSignedUp).length} 场活动</span>
+            {mySessions.length > 0 && (
+              <button
+                onClick={handleCopySchedule}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-all"
+              >
+                {copied ? "已复制" : "拷贝日程"}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mb-6">
