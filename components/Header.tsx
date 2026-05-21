@@ -19,6 +19,52 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const handleExport = async (type: "schedules" | "reflections") => {
+    setMenuOpen(false);
+    try {
+      const res = await fetch(`/api/export/${type}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qecon-${type}-${user!.username}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      console.error("Export failed");
+    }
+  };
+
+  const handleImport = (type: "schedules" | "reflections") => {
+    setMenuOpen(false);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const json = JSON.parse(text);
+        const res = await fetch(`/api/import/${type}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(json),
+        });
+        const result = await res.json();
+        if (res.ok) {
+          alert(`导入完成：成功 ${result.imported} 条，跳过 ${result.skipped} 条，无效 ${result.invalid} 条`);
+        } else {
+          alert(`导入失败：${result.error}`);
+        }
+      } catch {
+        alert("文件格式错误");
+      }
+    };
+    input.click();
+  };
+
   const navItems = [
     { path: "/", label: "活动日程" },
     { path: "/my-schedule", label: "我的日程", requireAuth: true },
@@ -76,6 +122,32 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
                         <p className="text-sm font-medium text-gray-900">{user.display_name}</p>
                         <p className="text-xs text-gray-500">@{user.username}</p>
                       </div>
+                      <button
+                        onClick={() => handleExport("schedules")}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        导出日程
+                      </button>
+                      <button
+                        onClick={() => handleExport("reflections")}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        导出感想
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => handleImport("schedules")}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        导入日程
+                      </button>
+                      <button
+                        onClick={() => handleImport("reflections")}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        导入感想
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
                       <button
                         onClick={() => {
                           setMenuOpen(false);

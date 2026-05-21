@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import os from "os";
 import fs from "fs";
+import { randomUUID } from "crypto";
 
 const QECON_DIR = path.join(os.homedir(), ".qecon");
 
@@ -36,6 +37,7 @@ function initDb(): Database.Database {
 
     CREATE TABLE IF NOT EXISTS signups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       session_id TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now')),
@@ -45,12 +47,29 @@ function initDb(): Database.Database {
 
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       session_id TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration: add uuid column to existing tables
+  const addUuidIfMissing = (table: string) => {
+    const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some(c => c.name === "uuid")) {
+      database.exec(`ALTER TABLE ${table} ADD COLUMN uuid TEXT`);
+      const rows = database.prepare(`SELECT id FROM ${table} WHERE uuid IS NULL`).all() as { id: number }[];
+      const stmt = database.prepare(`UPDATE ${table} SET uuid = ? WHERE id = ?`);
+      for (const row of rows) {
+        stmt.run(randomUUID(), row.id);
+      }
+    }
+  };
+  addUuidIfMissing("signups");
+  addUuidIfMissing("comments");
+
   return database;
 }
 
@@ -72,6 +91,7 @@ export interface User {
 
 export interface Signup {
   id: number;
+  uuid: string;
   user_id: number;
   session_id: string;
   created_at: string;
@@ -80,6 +100,7 @@ export interface Signup {
 
 export interface Comment {
   id: number;
+  uuid: string;
   user_id: number;
   session_id: string;
   content: string;
@@ -137,7 +158,7 @@ export function getAllSignups(): { session_id: string; user_id: number; display_
 }
 
 export function createSignup(userId: number, sessionId: string): void {
-  db.prepare("INSERT OR IGNORE INTO signups (user_id, session_id) VALUES (?, ?)").run(userId, sessionId);
+  db.prepare("INSERT OR IGNORE INTO signups (uuid, user_id, session_id) VALUES (?, ?, ?)").run(randomUUID(), userId, sessionId);
 }
 
 export function deleteSignup(userId: number, sessionId: string): void {
@@ -158,5 +179,25 @@ export function getCommentsBySession(sessionId: string): (Comment & { display_na
 }
 
 export function createComment(userId: number, sessionId: string, content: string): void {
-  db.prepare("INSERT INTO comments (user_id, session_id, content) VALUES (?, ?, ?)").run(userId, sessionId, content);
+  db.prepare("INSERT INTO comments (uuid, user_id, session_id, content) VALUES (?, ?, ?, ?)").run(randomUUID(), userId, sessionId, content);
+}
+
+export function getCommentsByUser(userId: number): Comment[] {
+  return db.prepare("SELECT * FROM comments WHERE user_id = ? ORDER BY created_at").all(userId) as Comment[];
+}
+
+export function importSignup(userId: number, sessionId: string, uuid: string, createdAt: string): { success: boolean; reason?: string } {
+  const existing = db.prepare("SELECT id FROM signups WHERE uuid = ?").get(uuid);
+  if (existing) return { success: false, reason: "duplicate" };
+  const dup = db.prepare("SELECT id FROM signups WHERE user_id = ? AND session_id = ?").get(userId, sessionId);
+  if (dup) return { success: false, reason: "duplicate" };
+  db.prepare("INSERT INTO signups (uuid, user_id, session_id, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(uuid, userId, sessionId, createdAt);
+  return { success: true };
+}
+
+export function importComment(userId: number, sessionId: string, content: string, uuid: string, createdAt: string): { success: boolean; reason?: string } {
+  const existing = db.prepare("SELECT id FROM comments WHERE uuid = ?").get(uuid);
+  if (existing) return { success: false, reason: "duplicate" };
+  db.prepare("INSERT INTO comments (uuid, user_id, session_id, content, created_at) VALUES (?, ?, ?, ?, ?)").run(uuid, userId, sessionId, content, createdAt);
+  return { success: true };
 }
