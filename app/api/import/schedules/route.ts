@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   let invalid = 0;
 
   for (const item of obj.data as Record<string, unknown>[]) {
-    if (!item.uuid || !item.session_id) {
+    if (!item.session_id) {
       invalid++;
       continue;
     }
@@ -35,7 +35,6 @@ export async function POST(request: Request) {
     const result = importSignup(
       user.id,
       item.session_id as string,
-      item.uuid as string,
       (item.created_at as string) || new Date().toISOString()
     );
     if (result.success) {

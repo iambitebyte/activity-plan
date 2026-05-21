@@ -186,18 +186,16 @@ export function getCommentsByUser(userId: number): Comment[] {
   return db.prepare("SELECT * FROM comments WHERE user_id = ? ORDER BY created_at").all(userId) as Comment[];
 }
 
-export function importSignup(userId: number, sessionId: string, uuid: string, createdAt: string): { success: boolean; reason?: string } {
-  const existing = db.prepare("SELECT id FROM signups WHERE uuid = ?").get(uuid);
-  if (existing) return { success: false, reason: "duplicate" };
+export function importSignup(userId: number, sessionId: string, createdAt: string): { success: boolean; reason?: string } {
   const dup = db.prepare("SELECT id FROM signups WHERE user_id = ? AND session_id = ?").get(userId, sessionId);
   if (dup) return { success: false, reason: "duplicate" };
-  db.prepare("INSERT INTO signups (uuid, user_id, session_id, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(uuid, userId, sessionId, createdAt);
+  db.prepare("INSERT INTO signups (uuid, user_id, session_id, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(randomUUID(), userId, sessionId, createdAt);
   return { success: true };
 }
 
-export function importComment(userId: number, sessionId: string, content: string, uuid: string, createdAt: string): { success: boolean; reason?: string } {
-  const existing = db.prepare("SELECT id FROM comments WHERE uuid = ?").get(uuid);
-  if (existing) return { success: false, reason: "duplicate" };
-  db.prepare("INSERT INTO comments (uuid, user_id, session_id, content, created_at) VALUES (?, ?, ?, ?, ?)").run(uuid, userId, sessionId, content, createdAt);
+export function importComment(userId: number, sessionId: string, content: string, createdAt: string): { success: boolean; reason?: string } {
+  const dup = db.prepare("SELECT id FROM comments WHERE user_id = ? AND session_id = ? AND content = ?").get(userId, sessionId, content);
+  if (dup) return { success: false, reason: "duplicate" };
+  db.prepare("INSERT INTO comments (uuid, user_id, session_id, content, created_at) VALUES (?, ?, ?, ?, ?)").run(randomUUID(), userId, sessionId, content, createdAt);
   return { success: true };
 }
