@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import UploadSection from "./UploadSection";
 
 interface SignupInfo {
   user_id: number;
@@ -14,6 +15,15 @@ interface CommentInfo {
   user_id: number;
   display_name: string;
   content: string;
+  created_at: string;
+}
+
+interface UploadInfo {
+  id: number;
+  user_id: number;
+  display_name: string;
+  original_name: string;
+  file_size: number;
   created_at: string;
 }
 
@@ -37,11 +47,13 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
   const [topic, setTopic] = useState("");
   const [signups, setSignups] = useState<SignupInfo[]>([]);
   const [comments, setComments] = useState<CommentInfo[]>([]);
+  const [uploads, setUploads] = useState<UploadInfo[]>([]);
   const [isSignedUp, setIsSignedUp] = useState(false);
   const [loading, setLoading] = useState(true);
   const [signupLoading, setSignupLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"comments" | "uploads">("comments");
 
   const fetchData = useCallback(async () => {
     try {
@@ -53,6 +65,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
         setTopic(data.session.topic);
         setSignups(data.signups);
         setComments(data.comments);
+        setUploads(data.uploads || []);
         setIsSignedUp(data.isSignedUp);
       }
     } catch (e) {
@@ -141,7 +154,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
       <div className="fixed inset-0 bg-black/40 animate-fade-in" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in flex flex-col">
+      <div className="relative w-full max-w-6xl max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-100">
           <div className="flex-1 pr-4">
@@ -197,86 +210,121 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                 </button>
               </div>
 
-              {/* Comments */}
-              <div className="border-t border-gray-100 pt-5">
-                <h3 className="text-base font-bold text-gray-900 mb-4">活动感想</h3>
+              {/* Tab Nav */}
+              <div className="-mx-6 border-t border-gray-100 px-6 pt-4">
+                <div className="flex gap-1 mb-4">
+                  <button
+                    onClick={() => setActiveTab("comments")}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      activeTab === "comments"
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    活动感想
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("uploads")}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      activeTab === "uploads"
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    文件共享
+                  </button>
+                </div>
 
-                {user && (
-                  <form onSubmit={handleComment} className="mb-5">
-                    <textarea
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 input-field text-sm resize-none"
-                      rows={3}
-                      placeholder="分享你参加这场活动的感想..."
-                      required
-                    />
-                    <div className="flex justify-end mt-2">
-                      <button
-                        type="submit"
-                        disabled={commentLoading || !commentText.trim()}
-                        className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                      >
-                        {commentLoading ? "提交中..." : "发表感想"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {!user && (
-                  <div className="mb-5 p-4 rounded-lg bg-gray-50 text-center">
-                    <p className="text-sm text-gray-500">
-                      <button
-                        onClick={() => { onClose(); router.push("/login"); }}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        登录
-                      </button>
-                      后可以发表感想
-                    </p>
-                  </div>
-                )}
-
-                {comments.length === 0 ? (
-                  <div className="text-center py-6">
-                    <p className="text-gray-400 text-sm">暂无感想，来做第一个留言的人吧</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(() => {
-                      const grouped: { userId: number; name: string; initial: string; items: typeof comments }[] = [];
-                      const order: number[] = [];
-                      for (const c of comments) {
-                        const g = grouped.find((g) => g.userId === c.user_id);
-                        if (g) {
-                          g.items.push(c);
-                        } else {
-                          grouped.push({ userId: c.user_id, name: c.display_name, initial: c.display_name.charAt(0), items: [c] });
-                          order.push(c.user_id);
-                        }
-                      }
-                      return grouped.map((g) => (
-                        <div key={g.userId} className="p-4 rounded-lg bg-gray-50">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
-                              {g.initial}
-                            </span>
-                            <span className="text-sm font-medium text-gray-900">{g.name}</span>
-                          </div>
-                          <div className="space-y-2 pl-8">
-                            {g.items.map((c) => (
-                              <div key={c.id} className="border-l-2 border-blue-100 pl-3">
-                                <p className="text-xs text-gray-400 mb-1">
-                                  {new Date(c.created_at + "Z").toLocaleString("zh-CN")}
-                                </p>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
-                              </div>
-                            ))}
-                          </div>
+                {/* Comments Tab */}
+                {activeTab === "comments" && (
+                  <div>
+                    {user && (
+                      <form onSubmit={handleComment} className="mb-5">
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 input-field text-sm resize-none"
+                          rows={3}
+                          placeholder="分享你参加这场活动的感想..."
+                          required
+                        />
+                        <div className="flex justify-end mt-2">
+                          <button
+                            type="submit"
+                            disabled={commentLoading || !commentText.trim()}
+                            className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                          >
+                            {commentLoading ? "提交中..." : "发表感想"}
+                          </button>
                         </div>
-                      ));
-                    })()}
+                      </form>
+                    )}
+
+                    {!user && (
+                      <div className="mb-5 p-4 rounded-lg bg-gray-50 text-center">
+                        <p className="text-sm text-gray-500">
+                          <button
+                            onClick={() => { onClose(); router.push("/login"); }}
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            登录
+                          </button>
+                          后可以发表感想
+                        </p>
+                      </div>
+                    )}
+
+                    {comments.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-gray-400 text-sm">暂无感想，来做第一个留言的人吧</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {(() => {
+                          const grouped: { userId: number; name: string; initial: string; items: typeof comments }[] = [];
+                          for (const c of comments) {
+                            const g = grouped.find((g) => g.userId === c.user_id);
+                            if (g) {
+                              g.items.push(c);
+                            } else {
+                              grouped.push({ userId: c.user_id, name: c.display_name, initial: c.display_name.charAt(0), items: [c] });
+                            }
+                          }
+                          return grouped.map((g) => (
+                            <div key={g.userId} className="p-4 rounded-lg bg-gray-50">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+                                  {g.initial}
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">{g.name}</span>
+                              </div>
+                              <div className="space-y-2 pl-8">
+                                {g.items.map((c) => (
+                                  <div key={c.id} className="border-l-2 border-blue-100 pl-3">
+                                    <p className="text-xs text-gray-400 mb-1">
+                                      {new Date(c.created_at + "Z").toLocaleString("zh-CN")}
+                                    </p>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {/* Uploads Tab */}
+                {activeTab === "uploads" && (
+                  <UploadSection
+                    sessionId={sessionId}
+                    user={user}
+                    uploads={uploads}
+                    onUploadsChange={setUploads}
+                    onLoginRedirect={() => { onClose(); router.push("/login"); }}
+                  />
                 )}
               </div>
             </>

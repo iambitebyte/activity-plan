@@ -53,6 +53,19 @@ function initDb(): Database.Database {
       content TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS uploads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL,
+      session_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      md5 TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   // Migration: add uuid column to existing tables
@@ -104,6 +117,18 @@ export interface Comment {
   user_id: number;
   session_id: string;
   content: string;
+  created_at: string;
+}
+
+export interface Upload {
+  id: number;
+  uuid: string;
+  user_id: number;
+  session_id: string;
+  filename: string;
+  original_name: string;
+  md5: string;
+  file_size: number;
   created_at: string;
 }
 
@@ -198,4 +223,36 @@ export function importComment(userId: number, sessionId: string, content: string
   if (dup) return { success: false, reason: "duplicate" };
   db.prepare("INSERT INTO comments (uuid, user_id, session_id, content, created_at) VALUES (?, ?, ?, ?, ?)").run(randomUUID(), userId, sessionId, content, createdAt);
   return { success: true };
+}
+
+export function getUploadsBySession(sessionId: string): (Upload & { display_name: string; username: string })[] {
+  return db.prepare(`
+    SELECT u.*, usr.display_name, usr.username
+    FROM uploads u JOIN users usr ON u.user_id = usr.id
+    WHERE u.session_id = ?
+    ORDER BY u.created_at DESC
+  `).all(sessionId) as (Upload & { display_name: string; username: string })[];
+}
+
+export function getUploadById(id: number): Upload | undefined {
+  return db.prepare("SELECT * FROM uploads WHERE id = ?").get(id) as Upload | undefined;
+}
+
+export function getUploadByMd5AndSession(md5: string, sessionId: string): Upload | undefined {
+  return db.prepare("SELECT * FROM uploads WHERE md5 = ? AND session_id = ? LIMIT 1").get(md5, sessionId) as Upload | undefined;
+}
+
+export function createUpload(userId: number, sessionId: string, filename: string, originalName: string, md5: string, fileSize: number): void {
+  db.prepare("INSERT INTO uploads (uuid, user_id, session_id, filename, original_name, md5, file_size) VALUES (?, ?, ?, ?, ?, ?, ?)").run(randomUUID(), userId, sessionId, filename, originalName, md5, fileSize);
+}
+
+export function deleteUpload(id: number, userId: number): { filename: string } | null {
+  const upload = db.prepare("SELECT * FROM uploads WHERE id = ? AND user_id = ?").get(id, userId) as Upload | undefined;
+  if (!upload) return null;
+  db.prepare("DELETE FROM uploads WHERE id = ?").run(id);
+  const remaining = db.prepare("SELECT id FROM uploads WHERE filename = ? LIMIT 1").get(upload.filename);
+  if (!remaining) {
+    return { filename: upload.filename };
+  }
+  return { filename: "" };
 }

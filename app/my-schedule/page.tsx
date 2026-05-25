@@ -65,6 +65,18 @@ function MyScheduleContent() {
     fetchData();
   }, [fetchData]);
 
+  // Restore scroll position after content loads
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem("my-schedule-scroll");
+    if (saved) {
+      sessionStorage.removeItem("my-schedule-scroll");
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(saved, 10));
+      });
+    }
+  }, [loading]);
+
   const handleSignup = async (sessionId: string) => {
     if (!user) return;
     setSignupLoading(sessionId);
@@ -227,7 +239,11 @@ function MyScheduleContent() {
                         </span>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => router.push(`/session/${session.id}?from=my-schedule&date=${selectedDate}`)}
+                            onClick={() => {
+                              const scrollY = window.scrollY;
+                              sessionStorage.setItem("my-schedule-scroll", String(scrollY));
+                              router.push(`/session/${session.id}?from=my-schedule&date=${selectedDate}`);
+                            }}
                             className="px-3 py-1.5 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition-all"
                           >
                             查看详情

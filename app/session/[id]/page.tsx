@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
+import UploadSection from "@/components/UploadSection";
 
 interface SessionInfo {
   id: string;
@@ -24,6 +25,15 @@ interface CommentInfo {
   user_id: number;
   display_name: string;
   content: string;
+  created_at: string;
+}
+
+interface UploadInfo {
+  id: number;
+  user_id: number;
+  display_name: string;
+  original_name: string;
+  file_size: number;
   created_at: string;
 }
 
@@ -53,12 +63,14 @@ function SessionDetailContent() {
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [signups, setSignups] = useState<SignupInfo[]>([]);
   const [comments, setComments] = useState<CommentInfo[]>([]);
+  const [uploads, setUploads] = useState<UploadInfo[]>([]);
   const [isSignedUp, setIsSignedUp] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [signupLoading, setSignupLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"comments" | "uploads">("comments");
   const [error, setError] = useState("");
 
   const fetchData = useCallback(async () => {
@@ -69,6 +81,7 @@ function SessionDetailContent() {
         setSession(data.session);
         setSignups(data.signups);
         setComments(data.comments);
+        setUploads(data.uploads || []);
         setIsSignedUp(data.isSignedUp);
         setUser(data.currentUser);
       } else {
@@ -180,7 +193,7 @@ function SessionDetailContent() {
     <div className="app-container">
       <Header user={user} currentPath="" onLogout={handleLogout} />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Session info */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 animate-fade-in">
           <button
@@ -228,84 +241,121 @@ function SessionDetailContent() {
           </div>
         </div>
 
-        {/* Comments */}
+        {/* Comments & Uploads */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fade-in">
-          <h2 className="text-lg font-bold text-gray-900 mb-5">活动感想</h2>
+          <div className="flex gap-1 mb-5">
+            <button
+              onClick={() => setActiveTab("comments")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "comments"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              活动感想
+            </button>
+            <button
+              onClick={() => setActiveTab("uploads")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "uploads"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              文件共享
+            </button>
+          </div>
 
-          {user && (
-            <form onSubmit={handleComment} className="mb-6">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 input-field text-sm resize-none"
-                rows={3}
-                placeholder="分享你参加这场活动的感想..."
-                required
-              />
-              <div className="flex justify-end mt-2">
-                <button
-                  type="submit"
-                  disabled={commentLoading || !commentText.trim()}
-                  className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                >
-                  {commentLoading ? "提交中..." : "发表感想"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {!user && (
-            <div className="mb-6 p-4 rounded-lg bg-gray-50 text-center">
-              <p className="text-sm text-gray-500">
-                <button
-                  onClick={() => router.push("/login")}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  登录
-                </button>
-                后可以发表感想
-              </p>
-            </div>
-          )}
-
-          {comments.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">暂无感想，来做第一个留言的人吧</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {(() => {
-                const grouped: { userId: number; name: string; initial: string; items: typeof comments }[] = [];
-                for (const c of comments) {
-                  const g = grouped.find((g) => g.userId === c.user_id);
-                  if (g) {
-                    g.items.push(c);
-                  } else {
-                    grouped.push({ userId: c.user_id, name: c.display_name, initial: c.display_name.charAt(0), items: [c] });
-                  }
-                }
-                return grouped.map((g) => (
-                  <div key={g.userId} className="p-4 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
-                        {g.initial}
-                      </span>
-                      <span className="text-sm font-medium text-gray-900">{g.name}</span>
-                    </div>
-                    <div className="space-y-2 pl-8">
-                      {g.items.map((c) => (
-                        <div key={c.id} className="border-l-2 border-blue-100 pl-3">
-                          <p className="text-xs text-gray-400 mb-1">
-                            {new Date(c.created_at + "Z").toLocaleString("zh-CN")}
-                          </p>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
-                        </div>
-                      ))}
-                    </div>
+          {/* Comments Tab */}
+          {activeTab === "comments" && (
+            <div>
+              {user && (
+                <form onSubmit={handleComment} className="mb-6">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 input-field text-sm resize-none"
+                    rows={3}
+                    placeholder="分享你参加这场活动的感想..."
+                    required
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      type="submit"
+                      disabled={commentLoading || !commentText.trim()}
+                      className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                    >
+                      {commentLoading ? "提交中..." : "发表感想"}
+                    </button>
                   </div>
-                ));
-              })()}
+                </form>
+              )}
+
+              {!user && (
+                <div className="mb-6 p-4 rounded-lg bg-gray-50 text-center">
+                  <p className="text-sm text-gray-500">
+                    <button
+                      onClick={() => router.push("/login")}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      登录
+                    </button>
+                    后可以发表感想
+                  </p>
+                </div>
+              )}
+
+              {comments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 text-sm">暂无感想，来做第一个留言的人吧</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                    const grouped: { userId: number; name: string; initial: string; items: typeof comments }[] = [];
+                    for (const c of comments) {
+                      const g = grouped.find((g) => g.userId === c.user_id);
+                      if (g) {
+                        g.items.push(c);
+                      } else {
+                        grouped.push({ userId: c.user_id, name: c.display_name, initial: c.display_name.charAt(0), items: [c] });
+                      }
+                    }
+                    return grouped.map((g) => (
+                      <div key={g.userId} className="p-4 rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+                            {g.initial}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">{g.name}</span>
+                        </div>
+                        <div className="space-y-2 pl-8">
+                          {g.items.map((c) => (
+                            <div key={c.id} className="border-l-2 border-blue-100 pl-3">
+                              <p className="text-xs text-gray-400 mb-1">
+                                {new Date(c.created_at + "Z").toLocaleString("zh-CN")}
+                              </p>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Uploads Tab */}
+          {activeTab === "uploads" && (
+            <UploadSection
+              sessionId={sessionId}
+              user={user}
+              uploads={uploads}
+              onUploadsChange={setUploads}
+              onLoginRedirect={() => router.push("/login")}
+            />
           )}
         </div>
       </main>
