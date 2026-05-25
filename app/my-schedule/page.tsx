@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 
 interface SessionData {
@@ -23,7 +23,17 @@ interface UserInfo {
 }
 
 export default function MySchedulePage() {
+  return (
+    <Suspense fallback={<div className="app-container flex items-center justify-center"><div className="text-center"><div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" /><p className="text-gray-500">加载中...</p></div></div>}>
+      <MyScheduleContent />
+    </Suspense>
+  );
+}
+
+function MyScheduleContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateFromUrl = searchParams.get("date");
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [dates, setDates] = useState<{ value: string; label: string }[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -39,14 +49,17 @@ export default function MySchedulePage() {
       setDates(data.dates);
       setUser(data.currentUser);
       if (data.dates.length > 0 && !selectedDate) {
-        setSelectedDate(data.dates[0].value);
+        const restored = dateFromUrl && data.dates.some((d: { value: string }) => d.value === dateFromUrl)
+          ? dateFromUrl
+          : data.dates[0].value;
+        setSelectedDate(restored);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, dateFromUrl]);
 
   useEffect(() => {
     fetchData();
@@ -214,7 +227,7 @@ export default function MySchedulePage() {
                         </span>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => router.push(`/session/${session.id}`)}
+                            onClick={() => router.push(`/session/${session.id}?from=my-schedule&date=${selectedDate}`)}
                             className="px-3 py-1.5 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition-all"
                           >
                             查看详情

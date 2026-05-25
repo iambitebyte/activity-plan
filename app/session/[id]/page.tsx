@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 
 interface SessionInfo {
@@ -34,9 +34,21 @@ interface UserInfo {
 }
 
 export default function SessionDetailPage() {
+  return (
+    <Suspense fallback={<div className="app-container flex items-center justify-center"><div className="text-center"><div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" /><p className="text-gray-500">加载中...</p></div></div>}>
+      <SessionDetailContent />
+    </Suspense>
+  );
+}
+
+function SessionDetailContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const sessionId = params.id as string;
+  const from = searchParams.get("from");
+  const date = searchParams.get("date");
+  const backUrl = from === "my-schedule" ? `/my-schedule${date ? `?date=${date}` : ""}` : "/";
 
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [signups, setSignups] = useState<SignupInfo[]>([]);
@@ -153,7 +165,7 @@ export default function SessionDetailPage() {
           <div className="empty-state rounded-2xl p-12">
             <p className="text-gray-500 text-lg mb-4">{error || "活动不存在"}</p>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push(backUrl)}
               className="btn-primary text-white px-6 py-2.5 rounded-lg text-sm font-semibold"
             >
               返回日程
@@ -172,7 +184,7 @@ export default function SessionDetailPage() {
         {/* Session info */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 animate-fade-in">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push(backUrl)}
             className="text-sm text-gray-400 hover:text-gray-600 mb-4 inline-flex items-center gap-1 transition-colors"
           >
             &larr; 返回日程
