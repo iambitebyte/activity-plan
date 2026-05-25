@@ -4,7 +4,7 @@ import fs from "fs";
 import crypto from "crypto";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(os.homedir(), ".qecon", "uploads");
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export function getUploadDir(): string {
   if (!fs.existsSync(UPLOAD_DIR)) {

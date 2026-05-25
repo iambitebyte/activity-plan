@@ -66,6 +66,20 @@ function initDb(): Database.Database {
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL,
+      session_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      md5 TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      content_type TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   // Migration: add uuid column to existing tables
@@ -129,6 +143,19 @@ export interface Upload {
   original_name: string;
   md5: string;
   file_size: number;
+  created_at: string;
+}
+
+export interface Image {
+  id: number;
+  uuid: string;
+  user_id: number;
+  session_id: string;
+  filename: string;
+  original_name: string;
+  md5: string;
+  file_size: number;
+  content_type: string;
   created_at: string;
 }
 
@@ -253,6 +280,35 @@ export function deleteUpload(id: number, userId: number): { filename: string } |
   const remaining = db.prepare("SELECT id FROM uploads WHERE filename = ? LIMIT 1").get(upload.filename);
   if (!remaining) {
     return { filename: upload.filename };
+  }
+  return { filename: "" };
+}
+
+export function getImagesBySession(sessionId: string): (Image & { display_name: string; username: string })[] {
+  return db.prepare(`
+    SELECT i.*, usr.display_name, usr.username
+    FROM images i JOIN users usr ON i.user_id = usr.id
+    WHERE i.session_id = ?
+    ORDER BY i.created_at DESC
+  `).all(sessionId) as (Image & { display_name: string; username: string })[];
+}
+
+export function getImageById(id: number): Image | undefined {
+  return db.prepare("SELECT * FROM images WHERE id = ?").get(id) as Image | undefined;
+}
+
+export function createImage(userId: number, sessionId: string, filename: string, originalName: string, md5: string, fileSize: number, contentType: string): void {
+  db.prepare("INSERT INTO images (uuid, user_id, session_id, filename, original_name, md5, file_size, content_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(randomUUID(), userId, sessionId, filename, originalName, md5, fileSize, contentType);
+}
+
+export function deleteImage(id: number, userId: number): { filename: string } | null {
+  const image = db.prepare("SELECT * FROM images WHERE id = ? AND user_id = ?").get(id, userId) as Image | undefined;
+  if (!image) return null;
+  db.prepare("DELETE FROM images WHERE id = ?").run(id);
+  const remaining = db.prepare("SELECT id FROM uploads WHERE filename = ? LIMIT 1").get(image.filename);
+  const remainingImg = db.prepare("SELECT id FROM images WHERE filename = ? AND id != ? LIMIT 1").get(image.filename, id);
+  if (!remaining && !remainingImg) {
+    return { filename: image.filename };
   }
   return { filename: "" };
 }

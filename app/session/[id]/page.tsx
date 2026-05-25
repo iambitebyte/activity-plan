@@ -37,6 +37,14 @@ interface UploadInfo {
   created_at: string;
 }
 
+interface ImageInfo {
+  id: number;
+  user_id: number;
+  display_name: string;
+  original_name: string;
+  created_at: string;
+}
+
 interface UserInfo {
   id: number;
   username: string;
@@ -64,6 +72,9 @@ function SessionDetailContent() {
   const [signups, setSignups] = useState<SignupInfo[]>([]);
   const [comments, setComments] = useState<CommentInfo[]>([]);
   const [uploads, setUploads] = useState<UploadInfo[]>([]);
+  const [images, setImages] = useState<ImageInfo[]>([]);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<number | null>(null);
   const [isSignedUp, setIsSignedUp] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,6 +93,7 @@ function SessionDetailContent() {
         setSignups(data.signups);
         setComments(data.comments);
         setUploads(data.uploads || []);
+        setImages(data.images || []);
         setIsSignedUp(data.isSignedUp);
         setUser(data.currentUser);
       } else {
@@ -97,6 +109,20 @@ function SessionDetailContent() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewImage(null);
+    };
+    if (previewImage !== null) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [previewImage]);
 
   const handleSignup = async () => {
     if (!user) {
@@ -149,6 +175,46 @@ function SessionDetailContent() {
       console.error(e);
     } finally {
       setCommentLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("请选择图片文件");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("图片大小不能超过20MB");
+      e.target.value = "";
+      return;
+    }
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("sessionId", sessionId);
+      formData.append("file", file);
+
+      const res = await fetch("/api/images", { method: "POST", body: formData });
+      if (res.ok) {
+        const detailRes = await fetch(`/api/sessions/${sessionId}`);
+        const detailData = await detailRes.json();
+        if (detailRes.ok) {
+          setImages(detailData.images || []);
+        }
+      } else {
+        const data = await res.json();
+        alert(data.error || "上传失败");
+      }
+    } catch {
+      alert("上传失败");
+    } finally {
+      setImageUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -279,7 +345,34 @@ function SessionDetailContent() {
                     placeholder="分享你参加这场活动的感想..."
                     required
                   />
-                  <div className="flex justify-end mt-2">
+                  <div className="flex justify-end items-center mt-2 gap-2">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("image-upload")?.click()}
+                      disabled={imageUploading}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="上传图片"
+                    >
+                      {imageUploading ? (
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15l-5-5L5 21" />
+                        </svg>
+                      )}
+                    </button>
                     <button
                       type="submit"
                       disabled={commentLoading || !commentText.trim()}
@@ -302,6 +395,32 @@ function SessionDetailContent() {
                     </button>
                     后可以发表感想
                   </p>
+                </div>
+              )}
+
+              {/* Image Gallery */}
+              {images.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex gap-3 overflow-x-auto pb-2">
+                    {images.map((img) => (
+                      <div
+                        key={img.id}
+                        className="flex-shrink-0 cursor-pointer group relative"
+                        onClick={() => setPreviewImage(img.id)}
+                      >
+                        <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group-hover:border-blue-400 transition-colors">
+                          <img
+                            src={`/api/images/${img.id}`}
+                            alt={img.original_name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded-b-lg truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                          {img.display_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -359,6 +478,29 @@ function SessionDetailContent() {
           )}
         </div>
       </main>
+
+      {/* Image Preview Modal */}
+      {previewImage !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative" style={{ width: "90vw", height: "90vh" }}>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white text-2xl transition-colors"
+            >
+              &times;
+            </button>
+            <img
+              src={`/api/images/${previewImage}`}
+              alt="preview"
+              className="max-w-full max-h-full object-contain mx-auto rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

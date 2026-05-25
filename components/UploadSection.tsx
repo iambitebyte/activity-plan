@@ -58,8 +58,8 @@ export default function UploadSection({ sessionId, user, uploads, onUploadsChang
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert("文件大小不能超过10MB");
+    if (file.size > 20 * 1024 * 1024) {
+      alert("文件大小不能超过20MB");
       e.target.value = "";
       return;
     }

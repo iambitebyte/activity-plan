@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionById } from "@/lib/master-data";
-import { getSignupsBySession, getCommentsBySession, getUploadsBySession } from "@/lib/db";
+import { getSignupsBySession, getCommentsBySession, getUploadsBySession, getImagesBySession } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
@@ -17,6 +17,7 @@ export async function GET(
     const signups = getSignupsBySession(id);
     const comments = getCommentsBySession(id);
     const uploads = getUploadsBySession(id);
+    const images = getImagesBySession(id);
     const user = await getCurrentUser();
 
     const isSignedUp = user ? signups.some((s) => s.user_id === user.id) : false;
@@ -39,6 +40,13 @@ export async function GET(
         original_name: u.original_name,
         file_size: u.file_size,
         created_at: u.created_at,
+      })),
+      images: images.map((img) => ({
+        id: img.id,
+        user_id: img.user_id,
+        display_name: img.display_name,
+        original_name: img.original_name,
+        created_at: img.created_at,
       })),
       currentUser: user
         ? { id: user.id, username: user.username, display_name: user.display_name }
