@@ -74,7 +74,7 @@ function SessionDetailContent() {
   const [uploads, setUploads] = useState<UploadInfo[]>([]);
   const [images, setImages] = useState<ImageInfo[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<number | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [isSignedUp, setIsSignedUp] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,9 +112,12 @@ function SessionDetailContent() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewImage(null);
+      if (e.key === "Escape") setPreviewIndex(null);
+      if (previewIndex === null) return;
+      if (e.key === "ArrowLeft" && previewIndex > 0) setPreviewIndex((i) => i! - 1);
+      if (e.key === "ArrowRight" && previewIndex < images.length - 1) setPreviewIndex((i) => i! + 1);
     };
-    if (previewImage !== null) {
+    if (previewIndex !== null) {
       document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
@@ -122,7 +125,7 @@ function SessionDetailContent() {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [previewImage]);
+  }, [previewIndex, images.length]);
 
   const handleSignup = async () => {
     if (!user) {
@@ -402,11 +405,11 @@ function SessionDetailContent() {
               {images.length > 0 && (
                 <div className="mb-6">
                   <div className="flex gap-3 overflow-x-auto pb-2">
-                    {images.map((img) => (
+                    {images.map((img, idx) => (
                       <div
                         key={img.id}
                         className="flex-shrink-0 cursor-pointer group relative"
-                        onClick={() => setPreviewImage(img.id)}
+                        onClick={() => setPreviewIndex(idx)}
                       >
                         <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group-hover:border-blue-400 transition-colors">
                           <img
@@ -480,20 +483,38 @@ function SessionDetailContent() {
       </main>
 
       {/* Image Preview Modal */}
-      {previewImage !== null && (
+      {previewIndex !== null && images[previewIndex] && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-          onClick={() => setPreviewImage(null)}
+          onClick={() => setPreviewIndex(null)}
         >
           <div className="relative" style={{ width: "90vw", height: "90vh" }}>
             <button
-              onClick={() => setPreviewImage(null)}
+              onClick={() => setPreviewIndex(null)}
               className="absolute -top-10 right-0 text-white/70 hover:text-white text-2xl transition-colors"
             >
               &times;
             </button>
+            {/* Left arrow */}
+            {previewIndex > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setPreviewIndex(previewIndex - 1); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 text-white text-xl transition-colors"
+              >
+                &#8249;
+              </button>
+            )}
+            {/* Right arrow */}
+            {previewIndex < images.length - 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setPreviewIndex(previewIndex + 1); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 text-white text-xl transition-colors"
+              >
+                &#8250;
+              </button>
+            )}
             <img
-              src={`/api/images/${previewImage}`}
+              src={`/api/images/${images[previewIndex].id}`}
               alt="preview"
               className="max-w-full max-h-full object-contain mx-auto rounded-lg"
               onClick={(e) => e.stopPropagation()}
