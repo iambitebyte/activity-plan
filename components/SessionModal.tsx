@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import UploadSection from "./UploadSection";
 import SessionInfo from "./SessionInfo";
+import VoiceInputButton from "./VoiceInputButton";
 
 interface SessionExt {
   topic: string;
@@ -69,6 +70,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
   const [signupLoading, setSignupLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [asrActive, setAsrActive] = useState(false);
   const [activeTab, setActiveTab] = useState<"comments" | "uploads">("comments");
 
   const fetchData = useCallback(async () => {
@@ -268,10 +270,15 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
                           placeholder="分享你参加这场活动的感想..."
                           required
                         />
-                        <div className="flex justify-end mt-2">
+                        <div className="flex items-center justify-between mt-2">
+                          <VoiceInputButton
+                            disabled={!!commentText.trim()}
+                            onTranscript={(text) => setCommentText(text)}
+                            onStatusChange={setAsrActive}
+                          />
                           <button
                             type="submit"
-                            disabled={commentLoading || !commentText.trim()}
+                            disabled={commentLoading || asrActive || !commentText.trim()}
                             className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                           >
                             {commentLoading ? "提交中..." : "发表感想"}

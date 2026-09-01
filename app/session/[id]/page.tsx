@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import UploadSection from "@/components/UploadSection";
 import SessionInfo from "@/components/SessionInfo";
+import VoiceInputButton from "@/components/VoiceInputButton";
 
 interface SessionInfoData {
   id: string;
@@ -90,6 +91,7 @@ function SessionDetailContent() {
   const [signupLoading, setSignupLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [asrActive, setAsrActive] = useState(false);
   const [activeTab, setActiveTab] = useState<"comments" | "uploads">("comments");
   const [error, setError] = useState("");
 
@@ -365,7 +367,13 @@ function SessionDetailContent() {
                     placeholder="分享你参加这场活动的感想..."
                     required
                   />
-                  <div className="flex justify-end items-center mt-2 gap-2">
+                  <div className="flex justify-between items-center mt-2 gap-2">
+                    <VoiceInputButton
+                      disabled={!!commentText.trim()}
+                      onTranscript={(text) => setCommentText(text)}
+                      onStatusChange={setAsrActive}
+                    />
+                    <div className="flex items-center gap-2">
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/gif,image/webp"
@@ -395,11 +403,12 @@ function SessionDetailContent() {
                     </button>
                     <button
                       type="submit"
-                      disabled={commentLoading || !commentText.trim()}
+                      disabled={commentLoading || asrActive || !commentText.trim()}
                       className="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                     >
                       {commentLoading ? "提交中..." : "发表感想"}
                     </button>
+                    </div>
                   </div>
                 </form>
               )}
