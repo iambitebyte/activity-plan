@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import SessionModal from "@/components/SessionModal";
+import { STAGE_FILTER_OPTIONS, getStageMeta, NO_STAGE } from "@/lib/stages";
 
 interface SessionData {
   id: string;
@@ -12,6 +13,13 @@ interface SessionData {
   fullTime: string;
   speaker: string;
   topic: string;
+  venue?: string;
+  track?: string;
+  producer?: string;
+  speaker_title?: string;
+  stages?: string[];
+  stage_summary?: string;
+  track_url?: string;
   signupCount: number;
   signups: { user_id: number; display_name: string }[];
   isSignedUp: boolean;
@@ -23,6 +31,26 @@ interface UserInfo {
   display_name: string;
 }
 
+/** 按间隔分组活动（>7 天视为不同场次活动），默认选中最新活动的第一天 */
+function defaultDate(values: string[]): string {
+  if (values.length === 0) return "";
+  const toTime = (v: string) =>
+    new Date(+v.slice(0, 4), +v.slice(4, 6) - 1, +v.slice(6, 8)).getTime();
+  const groups: string[][] = [];
+  let cur = [values[0]];
+  for (let i = 1; i < values.length; i++) {
+    const gap = (toTime(values[i]) - toTime(cur[cur.length - 1])) / 86400000;
+    if (gap > 7) {
+      groups.push(cur);
+      cur = [values[i]];
+    } else {
+      cur.push(values[i]);
+    }
+  }
+  groups.push(cur);
+  return groups[groups.length - 1][0];
+}
+
 export default function SchedulePage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionData[]>([]);
@@ -32,6 +60,15 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [signupLoading, setSignupLoading] = useState<string | null>(null);
   const [modalSessionId, setModalSessionId] = useState<string | null>(null);
+  const [selectedStage, setSelectedStage] = useState<string>("");
+
+  // 从 URL ?stage= 初始化阶段筛选（由内容分布页跳转）
+  useEffect(() => {
+    const stage = new URLSearchParams(window.location.search).get("stage");
+    if (stage && STAGE_FILTER_OPTIONS.includes(stage)) {
+      setSelectedStage(stage);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -41,7 +78,7 @@ export default function SchedulePage() {
       setDates(data.dates);
       setUser(data.currentUser);
       if (data.dates.length > 0 && !selectedDate) {
-        setSelectedDate(data.dates[0].value);
+        setSelectedDate(defaultDate(data.dates.map((d: { value: string }) => d.value)));
       }
     } catch (e) {
       console.error(e);
@@ -116,8 +153,27 @@ export default function SchedulePage() {
     );
   };
 
-  const filteredSessions = sessions.filter((s) => s.date === selectedDate);
+  const stageMatch = (s: SessionData) => {
+    if (!selectedStage) return true;
+    if (s.stages === undefined) return false; // 旧数据无阶段标签，不参与阶段筛选
+    if (selectedStage === NO_STAGE) return s.stages.length === 0;
+    return s.stages.includes(selectedStage);
+  };
+
+  const filteredSessions = sessions.filter((s) => s.date === selectedDate && stageMatch(s));
+  const dateSessions = sessions.filter((s) => s.date === selectedDate);
   const timeSlots = [...new Set(filteredSessions.map((s) => s.time))].sort();
+  const hasStageData = dateSessions.some((s) => s.stages !== undefined);
+
+  // 各阶段在当前日期的场次（用于筛选栏计数，仅统计带阶段数据）
+  const stageCounts = new Map<string, number>();
+  if (hasStageData) {
+    for (const s of dateSessions) {
+      if (s.stages === undefined) continue;
+      const list = s.stages.length > 0 ? s.stages : [NO_STAGE];
+      for (const st of list) stageCounts.set(st, (stageCounts.get(st) ?? 0) + 1);
+    }
+  }
 
   if (loading) {
     return (
@@ -136,7 +192,7 @@ export default function SchedulePage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Day tabs */}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4">
           {dates.map((d) => (
             <button
               key={d.value}
@@ -151,6 +207,40 @@ export default function SchedulePage() {
             </button>
           ))}
         </div>
+
+        {/* Stage filter（仅本次带阶段数据的日期显示） */}
+        {hasStageData && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <span className="text-xs text-gray-400 mr-1">按阶段筛选</span>
+          <button
+            onClick={() => setSelectedStage("")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              !selectedStage
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            全部 {dateSessions.length}
+          </button>
+          {STAGE_FILTER_OPTIONS.map((stage) => {
+            const count = stageCounts.get(stage) ?? 0;
+            if (count === 0) return null;
+            const meta = getStageMeta(stage);
+            const active = selectedStage === stage;
+            return (
+              <button
+                key={stage}
+                onClick={() => setSelectedStage(active ? "" : stage)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  active ? meta.solid : `${meta.badge} hover:opacity-80`
+                }`}
+              >
+                {meta.icon} {stage} {count}
+              </button>
+            );
+          })}
+        </div>
+        )}
 
         {/* Sessions by time slot */}
         {timeSlots.map((slot) => {
@@ -173,8 +263,49 @@ export default function SchedulePage() {
                       <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-2">
                         {session.topic}
                       </h3>
-                      <p className="text-sm text-gray-500">{session.speaker}</p>
+                      <p className="text-sm text-gray-500">
+                        {session.speaker}
+                        {session.speaker_title && (
+                          <span className="text-gray-400">｜{session.speaker_title}</span>
+                        )}
+                      </p>
+                      {(session.track || session.venue) && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                          {session.track && <>📌 {session.track}</>}
+                          {session.track && session.venue && <span className="mx-1.5">·</span>}
+                          {session.venue && <>📍 {session.venue}</>}
+                        </p>
+                      )}
                     </div>
+
+                    {session.stages && session.stages.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {session.stages.slice(0, 3).map((st, i) => {
+                          const meta = getStageMeta(st);
+                          return (
+                            <span
+                              key={st}
+                              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                                i === 0 ? meta.solid : meta.badge
+                              }`}
+                            >
+                              {st}
+                            </span>
+                          );
+                        })}
+                        {session.stages.length > 3 && (
+                          <span className="text-[11px] text-gray-400 self-center">
+                            +{session.stages.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {session.stage_summary && (
+                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-1 pl-2 border-l-2 border-gray-200">
+                        {session.stage_summary}
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2">
@@ -227,7 +358,17 @@ export default function SchedulePage() {
 
         {filteredSessions.length === 0 && (
           <div className="text-center py-20 empty-state rounded-2xl">
-            <p className="text-gray-400 text-lg">暂无活动安排</p>
+            <p className="text-gray-400 text-lg">
+              {selectedStage ? `当前日期没有「${selectedStage}」相关的演讲` : "暂无活动安排"}
+            </p>
+            {selectedStage && (
+              <button
+                onClick={() => setSelectedStage("")}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                清除阶段筛选
+              </button>
+            )}
           </div>
         )}
       </main>

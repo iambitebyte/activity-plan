@@ -3,6 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import UploadSection from "./UploadSection";
+import SessionInfo from "./SessionInfo";
+
+interface SessionExt {
+  topic: string;
+  speaker: string;
+  time: string;
+  speaker_title?: string;
+  venue?: string;
+  track?: string;
+  producer?: string;
+  stages?: string[];
+  stage_summary?: string;
+  detail?: { background?: string; outline?: string; gains?: string } | null;
+  track_url?: string;
+}
 
 interface SignupInfo {
   user_id: number;
@@ -45,6 +60,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
   const [time, setTime] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [topic, setTopic] = useState("");
+  const [ext, setExt] = useState<SessionExt | null>(null);
   const [signups, setSignups] = useState<SignupInfo[]>([]);
   const [comments, setComments] = useState<CommentInfo[]>([]);
   const [uploads, setUploads] = useState<UploadInfo[]>([]);
@@ -63,6 +79,7 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
         setTime(data.session.time);
         setSpeaker(data.session.speaker);
         setTopic(data.session.topic);
+        setExt(data.session);
         setSignups(data.signups);
         setComments(data.comments);
         setUploads(data.uploads || []);
@@ -183,6 +200,9 @@ export default function SessionModal({ sessionId, user, onClose, onSignupChange 
             </div>
           ) : (
             <>
+              {/* 议题扩展信息：阶段/摘要/详情 */}
+              {ext && <SessionInfo session={ext} />}
+
               {/* Signup section */}
               <div className="flex items-center justify-between">
                 <div>

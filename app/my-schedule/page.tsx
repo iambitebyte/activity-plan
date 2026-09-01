@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
+import { getStageMeta } from "@/lib/stages";
 
 interface SessionData {
   id: string;
@@ -11,6 +12,8 @@ interface SessionData {
   fullTime: string;
   speaker: string;
   topic: string;
+  stages?: string[];
+  track?: string;
   signupCount: number;
   signups: { user_id: number; display_name: string }[];
   isSignedUp: boolean;
@@ -232,6 +235,23 @@ function MyScheduleContent() {
                       <div className="mb-3">
                         <h3 className="font-bold text-gray-900 text-base mb-1">{session.topic}</h3>
                         <p className="text-sm text-gray-500">{session.speaker}</p>
+                        {session.stages && session.stages.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {session.stages.slice(0, 4).map((st, i) => {
+                              const meta = getStageMeta(st);
+                              return (
+                                <span
+                                  key={st}
+                                  className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                                    i === 0 ? meta.solid : meta.badge
+                                  }`}
+                                >
+                                  {st}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-between mt-4 pt-3 border-t border-blue-100">
                         <span className="signup-badge active">

@@ -4,14 +4,23 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import UploadSection from "@/components/UploadSection";
+import SessionInfo from "@/components/SessionInfo";
 
-interface SessionInfo {
+interface SessionInfoData {
   id: string;
   date: string;
   time: string;
   fullTime: string;
   speaker: string;
   topic: string;
+  venue?: string;
+  track?: string;
+  producer?: string;
+  speaker_title?: string;
+  stages?: string[];
+  stage_summary?: string;
+  detail?: { background?: string; outline?: string; gains?: string } | null;
+  track_url?: string;
 }
 
 interface SignupInfo {
@@ -68,7 +77,7 @@ function SessionDetailContent() {
   const date = searchParams.get("date");
   const backUrl = from === "my-schedule" ? `/my-schedule${date ? `?date=${date}` : ""}` : "/";
 
-  const [session, setSession] = useState<SessionInfo | null>(null);
+  const [session, setSession] = useState<SessionInfoData | null>(null);
   const [signups, setSignups] = useState<SignupInfo[]>([]);
   const [comments, setComments] = useState<CommentInfo[]>([]);
   const [uploads, setUploads] = useState<UploadInfo[]>([]);
@@ -277,6 +286,14 @@ function SessionDetailContent() {
             <span className="time-badge">{session.time}</span>
             <span>|</span>
             <span className="font-medium text-gray-700">{session.speaker}</span>
+            {session.speaker_title && (
+              <span className="text-gray-400">｜{session.speaker_title}</span>
+            )}
+          </div>
+
+          {/* 阶段标签 + 阶段摘要 + 议题详情 */}
+          <div className="mt-4">
+            <SessionInfo session={session} />
           </div>
 
           <div className="mt-5 pt-5 border-t border-gray-100">
