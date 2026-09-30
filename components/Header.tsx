@@ -28,7 +28,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `qecon-${type}-${user!.username}.json`;
+      a.download = `tech-summit-${type}-${user!.username}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -81,7 +81,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
               className="text-xl font-bold text-white cursor-pointer"
               onClick={() => router.push("/")}
             >
-              QECON 活动日程
+              技术峰会活动日程
             </h1>
             <nav className="hidden sm:flex items-center gap-1">
               {navItems.map((item) => {

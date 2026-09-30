@@ -29,7 +29,7 @@ export async function GET() {
   return new Response(JSON.stringify(payload, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="qecon-schedules-${user.username}.json"`,
+      "Content-Disposition": `attachment; filename="tech-summit-schedules-${user.username}.json"`,
     },
   });
 }

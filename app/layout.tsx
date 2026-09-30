@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QECON 活动日程",
-  description: "QECON 活动日程管理与报名系统",
+  title: "技术峰会活动日程",
+  description: "技术峰会活动日程管理与报名系统",
 };
 
 export default function RootLayout({

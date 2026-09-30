@@ -30,7 +30,7 @@ export async function GET() {
   return new Response(JSON.stringify(payload, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="qecon-reflections-${user.username}.json"`,
+      "Content-Disposition": `attachment; filename="tech-summit-reflections-${user.username}.json"`,
     },
   });
 }
