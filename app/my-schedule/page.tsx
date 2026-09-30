@@ -54,7 +54,9 @@ function MyScheduleContent() {
       if (data.dates.length > 0 && !selectedDate) {
         const restored = dateFromUrl && data.dates.some((d: { value: string }) => d.value === dateFromUrl)
           ? dateFromUrl
-          : data.dates[0].value;
+          // 默认定位到第一个有报名的日期，否则第一天
+          : (data.sessions as { date: string; isSignedUp: boolean }[]).find((s) => s.isSignedUp)?.date
+            ?? data.dates[0].value;
         setSelectedDate(restored);
       }
     } catch (e) {

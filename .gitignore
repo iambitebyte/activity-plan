@@ -5,3 +5,5 @@ next-env.d.ts
 .qecon/
 .env
 .env.local
+upload/
+activity_data/

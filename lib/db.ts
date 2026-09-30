@@ -1,22 +1,25 @@
 import Database from "better-sqlite3";
-import path from "path";
-import os from "os";
 import fs from "fs";
 import { randomUUID } from "crypto";
+import { DB_PATH, LEGACY_DB_PATH, ensureDataDirs } from "./paths";
 
-const QECON_DIR = path.join(os.homedir(), ".qecon");
-
-if (!fs.existsSync(QECON_DIR)) {
-  fs.mkdirSync(QECON_DIR, { recursive: true });
+/** 旧版位置存在数据库而新位置没有时，自动搬迁（含 WAL/SHM） */
+function migrateLegacyDb(): void {
+  ensureDataDirs();
+  if (fs.existsSync(DB_PATH) || !fs.existsSync(LEGACY_DB_PATH)) return;
+  for (const suffix of ["", "-wal", "-shm"]) {
+    const from = LEGACY_DB_PATH + suffix;
+    if (fs.existsSync(from)) fs.copyFileSync(from, DB_PATH + suffix);
+  }
+  console.log(`[db] 已迁移旧数据库 ${LEGACY_DB_PATH} -> ${DB_PATH}`);
 }
-
-const DB_PATH = path.join(QECON_DIR, "qecon.db");
 
 const globalForDb = globalThis as unknown as {
   db: Database.Database | undefined;
 };
 
 function initDb(): Database.Database {
+  migrateLegacyDb();
   const database = new Database(DB_PATH);
   database.pragma("journal_mode = WAL");
   database.exec(`

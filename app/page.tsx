@@ -9,6 +9,7 @@ import { STAGE_FILTER_OPTIONS, getStageMeta, NO_STAGE } from "@/lib/stages";
 interface SessionData {
   id: string;
   date: string;
+  activity: string;
   time: string;
   fullTime: string;
   speaker: string;
@@ -25,36 +26,26 @@ interface SessionData {
   isSignedUp: boolean;
 }
 
+interface ActivityData {
+  id: string;
+  name: string;
+  dates: string[];
+}
+
 interface UserInfo {
   id: number;
   username: string;
   display_name: string;
 }
 
-/** 按间隔分组活动（>7 天视为不同场次活动），默认选中最新活动的第一天 */
-function defaultDate(values: string[]): string {
-  if (values.length === 0) return "";
-  const toTime = (v: string) =>
-    new Date(+v.slice(0, 4), +v.slice(4, 6) - 1, +v.slice(6, 8)).getTime();
-  const groups: string[][] = [];
-  let cur = [values[0]];
-  for (let i = 1; i < values.length; i++) {
-    const gap = (toTime(values[i]) - toTime(cur[cur.length - 1])) / 86400000;
-    if (gap > 7) {
-      groups.push(cur);
-      cur = [values[i]];
-    } else {
-      cur.push(values[i]);
-    }
-  }
-  groups.push(cur);
-  return groups[groups.length - 1][0];
-}
+/** 默认选中最新活动的第一天 */
 
 export default function SchedulePage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [dates, setDates] = useState<{ value: string; label: string }[]>([]);
+  const [activities, setActivities] = useState<ActivityData[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,16 +67,22 @@ export default function SchedulePage() {
       const data = await res.json();
       setSessions(data.sessions);
       setDates(data.dates);
+      setActivities(data.activities ?? []);
       setUser(data.currentUser);
-      if (data.dates.length > 0 && !selectedDate) {
-        setSelectedDate(defaultDate(data.dates.map((d: { value: string }) => d.value)));
+      // 默认选中最新活动（列表末尾）及其第一天
+      if (data.activities?.length > 0 && !selectedActivity) {
+        const latest = data.activities[data.activities.length - 1];
+        setSelectedActivity(latest.id);
+        setSelectedDate((prev) => prev || latest.dates[0] || "");
+      } else if (data.dates.length > 0 && !selectedDate) {
+        setSelectedDate(data.dates[data.dates.length - 1].value);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedActivity, selectedDate]);
 
   useEffect(() => {
     fetchData();
@@ -153,6 +150,12 @@ export default function SchedulePage() {
     );
   };
 
+  const handleActivitySelect = (activityId: string) => {
+    setSelectedActivity(activityId);
+    const act = activities.find((a) => a.id === activityId);
+    if (act && act.dates.length > 0) setSelectedDate(act.dates[0]);
+  };
+
   const stageMatch = (s: SessionData) => {
     if (!selectedStage) return true;
     if (s.stages === undefined) return false; // 旧数据无阶段标签，不参与阶段筛选
@@ -164,6 +167,12 @@ export default function SchedulePage() {
   const dateSessions = sessions.filter((s) => s.date === selectedDate);
   const timeSlots = [...new Set(filteredSessions.map((s) => s.time))].sort();
   const hasStageData = dateSessions.some((s) => s.stages !== undefined);
+
+  // 当前活动下的日期 tab
+  const activityDateSet = new Set(activities.find((a) => a.id === selectedActivity)?.dates ?? []);
+  const visibleDates = selectedActivity
+    ? dates.filter((d) => activityDateSet.has(d.value))
+    : dates;
 
   // 各阶段在当前日期的场次（用于筛选栏计数，仅统计带阶段数据）
   const stageCounts = new Map<string, number>();
@@ -191,9 +200,31 @@ export default function SchedulePage() {
       <Header user={user} currentPath="/" onLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Activity tabs（多场活动时显示） */}
+        {activities.length > 1 && (
+          <div className="flex items-center gap-2 mb-3">
+            {activities.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => handleActivitySelect(a.id)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  selectedActivity === a.id
+                    ? "bg-gray-900 text-white shadow-md"
+                    : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400 hover:text-gray-700"
+                }`}
+              >
+                {a.name}
+                <span className={`ml-1.5 text-xs font-normal ${selectedActivity === a.id ? "text-gray-300" : "text-gray-400"}`}>
+                  {a.dates.length}天
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Day tabs */}
         <div className="flex items-center gap-2 mb-4">
-          {dates.map((d) => (
+          {visibleDates.map((d) => (
             <button
               key={d.value}
               onClick={() => setSelectedDate(d.value)}

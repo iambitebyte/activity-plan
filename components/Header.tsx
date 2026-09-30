@@ -68,6 +68,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
   const navItems = [
     { path: "/", label: "活动日程" },
     { path: "/overview", label: "内容分布" },
+    { path: "/tech", label: "技术洞察" },
     { path: "/my-schedule", label: "我的日程", requireAuth: true },
   ];
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadSessions, getDates, formatDisplayDate } from "@/lib/master-data";
+import { loadSessions, getDates, getActivities, formatDisplayDate } from "@/lib/master-data";
 import { getAllSignups } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -7,6 +7,7 @@ export async function GET() {
   try {
     const sessions = loadSessions();
     const dates = getDates();
+    const activities = getActivities();
     const allSignups = getAllSignups();
     const user = await getCurrentUser();
 
@@ -41,6 +42,7 @@ export async function GET() {
     return NextResponse.json({
       sessions: sessionsWithSignups,
       dates: datesFormatted,
+      activities,
       currentUser: user
         ? { id: user.id, username: user.username, display_name: user.display_name }
         : null,

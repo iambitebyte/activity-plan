@@ -13,6 +13,13 @@ interface SessionData {
   topic: string;
   track?: string;
   stages?: string[];
+  activity?: string;
+}
+
+interface ActivityData {
+  id: string;
+  name: string;
+  dates: string[];
 }
 
 interface UserInfo {
@@ -37,6 +44,8 @@ function coverageBy(sessions: SessionData[]) {
 export default function OverviewPage() {
   const router = useRouter();
   const [allSessions, setAllSessions] = useState<SessionData[]>([]);
+  const [activities, setActivities] = useState<ActivityData[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +55,11 @@ export default function OverviewPage() {
         const res = await fetch("/api/sessions");
         const data = await res.json();
         setAllSessions(data.sessions ?? []);
+        setActivities(data.activities ?? []);
+        // 默认选中最新活动
+        if (data.activities?.length > 0) {
+          setSelectedActivity(data.activities[data.activities.length - 1].id);
+        }
         setUser(data.currentUser);
       } catch (e) {
         console.error(e);
@@ -55,8 +69,11 @@ export default function OverviewPage() {
     })();
   }, []);
 
-  // 仅统计带阶段标签的数据（本次 QECon 上海站）
-  const sessions = allSessions.filter((s) => s.stages !== undefined);
+  // 仅统计选中活动内带阶段标签的数据
+  const sessions = allSessions.filter(
+    (s) => (s.activity ?? "") === selectedActivity && s.stages !== undefined
+  );
+  const selectedActivityName = activities.find((a) => a.id === selectedActivity)?.name ?? "";
   const coverage = coverageBy(sessions);
   const primary = new Map<string, number>();
   for (const s of sessions) {
@@ -101,11 +118,30 @@ export default function OverviewPage() {
       <Header user={user} currentPath="/overview" onLogout={async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); }} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        {/* 活动选择（多场活动时显示） */}
+        {activities.length > 1 && (
+          <div className="flex items-center gap-2">
+            {activities.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => setSelectedActivity(a.id)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  selectedActivity === a.id
+                    ? "bg-gray-900 text-white shadow-md"
+                    : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400 hover:text-gray-700"
+                }`}
+              >
+                {a.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* 标题 */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900">QECon 2026 上海站 · 内容分布</h2>
+          <h2 className="text-xl font-bold text-gray-900">{selectedActivityName || "日程"} · 内容分布</h2>
           <p className="text-sm text-gray-500 mt-1">
-            68 场主题演讲 × 软件工程生命周期阶段（一对多标签）。点击阶段可跳转到对应筛选的日程。
+            {sessions.length} 场主题演讲 × 软件工程生命周期阶段（一对多标签）。点击阶段可跳转到对应筛选的日程。
           </p>
         </div>
 
